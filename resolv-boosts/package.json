@@ -1,0 +1,20 @@
+{
+  "private": true,
+  "name": "resolv-boosts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "sentio build",
+    "gen": "sentio gen",
+    "test": "sentio test",
+    "upload": "sentio upload",
+    "postinstall": "sentio gen"
+  },
+  "dependencies": {
+    "@sentio/sdk": "^2.48.0"
+  },
+  "devDependencies": {
+    "@sentio/cli": "^2.21.0",
+    "typescript": "^5.4.5"
+  }
+}
