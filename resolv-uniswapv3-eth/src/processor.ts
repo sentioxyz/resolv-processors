@@ -4,7 +4,7 @@ import { EthContext, isNullAddress } from "@sentio/sdk/eth";
 import { getPriceBySymbol } from "@sentio/sdk/utils";
 import { Token } from "@uniswap/sdk-core";
 import { Pool, Position } from "@uniswap/v3-sdk";
-import { fetchBoosts, getBoostMultiplier } from "./boosts.js";
+import { fetchBoosts, getBoostMultiplier, getBoosts } from "./boosts.js";
 import {
   configs,
   DAILY_POINTS,
@@ -20,9 +20,7 @@ import {
   getNonfungiblePositionManagerContractOnContext,
   NonfungiblePositionManagerProcessor,
 } from "./types/eth/nonfungiblepositionmanager.js";
-import {
-  getUniswapV3PoolContractOnContext
-} from "./types/eth/uniswapv3pool.js";
+import { getUniswapV3PoolContractOnContext } from "./types/eth/uniswapv3pool.js";
 
 const MILLISECOND_PER_HOUR = 60 * 60 * 1000 * 24;
 
@@ -206,6 +204,8 @@ async function processPosition(
     ? await calcPoints(ctx, positionSnapshot)
     : new BigDecimal(0);
 
+  const boosts = await getBoosts(ctx, positionSnapshot?.owner ?? "noone");
+
   try {
     // the position is not burned
     const latestPositionSnapshot = await getLatestPositionSnapshot(
@@ -243,6 +243,7 @@ async function processPosition(
       newAmount0: newAmount0.toString(),
       newAmount1: newAmount1.toString(),
       newUsdValue: newUsdValue.toString(),
+      boosts: JSON.stringify(boosts),
     });
     return latestPositionSnapshot;
   } catch (e) {
@@ -273,8 +274,13 @@ async function processPosition(
         snapshotUsdValue: snapshotUsdValue.toString(),
         newOwner: "noone",
         newTimestampMilli: ctx.timestamp.getTime(),
-        newStoneBalance: "0",
+        newAmount0: "0",
+        newAmount1: "0",
+        newUsdValue: "0",
+        boosts: JSON.stringify(boosts),
       });
+    } else {
+      throw e;
     }
   }
   return;

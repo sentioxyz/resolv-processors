@@ -12,12 +12,12 @@ const updateIntervalMilli = 10 * 60 * 1000; // 10 minutes
 
 const mutex = new Mutex();
 let lastUpdateTimestampMilli = 0;
-const accountBoosts: { [account: string]: Boost[] } = {};
+let accountBoosts: { [account: string]: Boost[] } = {};
 
 fetchBoosts();
 
 export async function getBoostMultiplier(ctx: EthContext, account: string) {
-  const boosts = await getBoostsByTime(ctx.timestamp.getTime(), account);
+  const boosts = await getBoosts(ctx, account);
   let ret = 1;
   if (boosts.dinero) {
     ret *= 2;
@@ -28,7 +28,12 @@ export async function getBoostMultiplier(ctx: EthContext, account: string) {
   return ret;
 }
 
+export async function getBoosts(ctx: EthContext, account: string) {
+  return getBoostsByTime(ctx.timestamp.getTime(), account);
+}
+
 export async function getBoostsByTime(timestampMilli: number, account: string) {
+  account = account.toLowerCase();
   const defaultBoost = <Boost>{
     account,
     timestampMilli,
@@ -37,6 +42,7 @@ export async function getBoostsByTime(timestampMilli: number, account: string) {
   };
 
   const allBoosts = await mutex.runExclusive(fetchBoosts);
+  console.log("getBoostsByTime", timestampMilli, account, Object.keys(allBoosts).length);
   const boosts = allBoosts[account];
   if (!boosts) {
     return defaultBoost;
@@ -107,12 +113,13 @@ export async function fetchBoosts() {
     }
     tot += resp.result.rows.length;
     offset += limit;
-    console.log("got boosts rows", ret.length);
+    console.log("got boosts rows", resp.result.rows.length);
     if (resp.result.rows.length < limit) {
       break;
     }
   }
-  lastUpdateTimestampMilli = Date.now();
   console.log("successfully updated boosts, size:", tot);
+  lastUpdateTimestampMilli = Date.now();
+  accountBoosts = ret;
   return ret;
 }
