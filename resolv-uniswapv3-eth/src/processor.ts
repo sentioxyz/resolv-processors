@@ -1,14 +1,15 @@
 import { GLOBAL_CONFIG } from "@sentio/runtime";
 import { BigDecimal } from "@sentio/sdk";
 import { EthContext, isNullAddress } from "@sentio/sdk/eth";
-import { getPriceBySymbol } from "@sentio/sdk/utils";
 import { Token } from "@uniswap/sdk-core";
 import { Pool, Position } from "@uniswap/v3-sdk";
-import { fetchBoosts, getBoostMultiplier, getBoosts } from "./boosts.js";
+import { getBoostMultiplier, getBoosts } from "./boosts.js";
 import {
   configs,
   DAILY_POINTS,
   getPoolInfo,
+  getTokenPrice,
+  MILLISECOND_PER_HOUR,
   NETWORK,
   NONFUNGIBLE_POSITION_MANAGER_CONTRACT,
   POOL_START_BLOCK,
@@ -21,8 +22,6 @@ import {
   NonfungiblePositionManagerProcessor,
 } from "./types/eth/nonfungiblepositionmanager.js";
 import { getUniswapV3PoolContractOnContext } from "./types/eth/uniswapv3pool.js";
-
-const MILLISECOND_PER_HOUR = 60 * 60 * 1000 * 24;
 
 // represents response of NonfungiblePositionManager.positions(tokenId)
 interface PositionInfo {
@@ -117,13 +116,6 @@ NonfungiblePositionManagerProcessor.bind({
     },
     4 * 60,
     24 * 60
-  )
-  .onTimeInterval(
-    async (_, ctx) => {
-      await fetchBoosts();
-    },
-    30,
-    30
   );
 
 // configs.forEach((config) =>
@@ -314,18 +306,6 @@ async function calcPoints(
     .multipliedBy(deltaDay)
     .multipliedBy(multiplier);
   return points;
-}
-
-function getTokenPrice(ctx: EthContext, token: string) {
-  if (token.toLowerCase() == "0x66a1e37c9b0eaddca17d3662d6c05f4decf3e110") {
-    // USR
-    return 1;
-  }
-  if (token.toLowerCase() == "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48") {
-    // USDC
-    return getPriceBySymbol("usdc", ctx.timestamp);
-  }
-  throw new Error(`unsupported token: ${token}`);
 }
 
 // This method could throw exception if the position (tokenId) is burned

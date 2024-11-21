@@ -1,0 +1,8 @@
+type AccountSnapshot @entity {
+  id: String!
+  poolAddress: String!
+  timestampMilli: BigInt!
+  amount0: BigDecimal!
+  amount1: BigDecimal!
+  usdValue: BigDecimal!
+}

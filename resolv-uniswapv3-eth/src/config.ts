@@ -1,6 +1,7 @@
-import { EthChainId, getProvider } from "@sentio/sdk/eth";
+import { EthChainId, EthContext, getProvider } from "@sentio/sdk/eth";
 import { getUniswapV3PoolContract } from "./types/eth/uniswapv3pool.js";
 import { getERC20Contract } from "@sentio/sdk/eth/builtin/erc20";
+import { getPriceBySymbol } from "@sentio/sdk/utils";
 
 export interface PoolInfo {
   address: string;
@@ -11,6 +12,7 @@ export interface PoolInfo {
   fee: number;
 }
 
+export const MILLISECOND_PER_HOUR = 60 * 60 * 1000 * 24;
 export const DAILY_POINTS = 15;
 
 export const NETWORK = EthChainId.ETHEREUM;
@@ -74,4 +76,16 @@ async function getCreationBlock(
     }
   }
   return l;
+}
+
+export function getTokenPrice(ctx: EthContext, token: string) {
+  if (token.toLowerCase() == "0x66a1e37c9b0eaddca17d3662d6c05f4decf3e110") {
+    // USR
+    return 1;
+  }
+  if (token.toLowerCase() == "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48") {
+    // USDC
+    return getPriceBySymbol("usdc", ctx.timestamp);
+  }
+  throw new Error(`unsupported token: ${token}`);
 }
