@@ -2,4 +2,5 @@ type BoostSnapshot @entity {
   id: String!
   blueprint: Boolean!
   dinero: Boolean!
+  hyperliquid: Boolean!
 }

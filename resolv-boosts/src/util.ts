@@ -4,7 +4,7 @@ import { BoostSnapshot } from "./schema/store.js";
 export async function updateBoost(
   ctx: EthContext,
   account: string,
-  field: "blueprint" | "dinero",
+  field: "blueprint" | "dinero" | "hyperliquid",
   value: boolean
 ) {
   const snapshot =

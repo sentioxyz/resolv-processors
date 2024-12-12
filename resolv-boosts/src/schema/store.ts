@@ -26,6 +26,10 @@ export class BoostSnapshot extends AbstractEntity  {
 	@Required
 	@Column("Boolean")
 	dinero: Boolean
+
+	@Required
+	@Column("Boolean")
+	hyperliquid: Boolean
   constructor(data: Partial<BoostSnapshot>) {super()}
 }
 
@@ -34,6 +38,7 @@ const source = `type BoostSnapshot @entity {
   id: String!
   blueprint: Boolean!
   dinero: Boolean!
+  hyperliquid: Boolean!
 }
 `
 DatabaseSchema.register({

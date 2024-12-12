@@ -190,7 +190,7 @@ async function getAccountSnapshot(
 
   const poolInfo = getPoolInfo(ctx.address)!;
 
-  const [token0Total, token1Total] = await ctx.contract.get_balances();
+  const [token0Total, token1Total] = await config.getBalances(ctx);
   const [amount0, amount1] = [
     BigInt(token0Total.asBigDecimal().multipliedBy(share).toFixed(0)).scaleDown(
       poolInfo.token0Decimals

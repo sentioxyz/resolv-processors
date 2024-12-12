@@ -1,12 +1,15 @@
 import { EthChainId, EthContext, getProvider } from "@sentio/sdk/eth";
-import { getCurveStableSwapNGContract } from "./types/eth/curvestableswapng.js";
+import { getCurveStableSwapNGContract, getCurveStableSwapNGContractOnContext } from "./types/eth/curvestableswapng.js";
 import { getPriceBySymbol } from "@sentio/sdk/utils";
 import { getERC20Contract } from "@sentio/sdk/eth/builtin/erc20";
+import { getCurveGaugeContractOnContext } from "./types/eth/curvegauge.js";
+import { getCurveTwocryptoOptimizedContractOnContext } from "./types/eth/curvetwocryptooptimized.js";
 
 interface Config {
   address: string;
   gauge?: string;
   gaugeStartBlock?: number;
+  getBalances: (ctx: EthContext) => Promise<bigint[]>,
 }
 
 export const DAILY_POINTS = 15;
@@ -21,6 +24,7 @@ export const configs: Config[] = [
       NETWORK,
       "0xf589273a91622f1f48c0cd378881f0b3e6c40a95"
     ),
+    getBalances: (ctx: EthContext) => getCurveStableSwapNGContractOnContext(ctx, "0x3ee841f47947fefbe510366e4bbb49e145484195").get_balances()
   },
   {
     address: "0xc907ba505c2e1cbc4658c395d4a2c7e6d2c32656", // USR-RLP
@@ -29,6 +33,10 @@ export const configs: Config[] = [
       NETWORK,
       "0x52ed9f154f25dd0abc67edb15dce90fd92d8b22f"
     ),
+    getBalances: async (ctx: EthContext) => {
+      const c = getCurveTwocryptoOptimizedContractOnContext(ctx, "0xc907ba505c2e1cbc4658c395d4a2c7e6d2c32656");
+      return [await c.balances(0), await c.balances(1)];
+    }
   },
 ];
 
