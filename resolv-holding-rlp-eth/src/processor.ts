@@ -3,7 +3,7 @@ import { BigDecimal } from "@sentio/sdk";
 import { EthContext, isNullAddress } from "@sentio/sdk/eth";
 import { ERC20Processor } from "@sentio/sdk/eth/builtin";
 import { ERC20Context } from "@sentio/sdk/eth/builtin/erc20";
-import { getBoostMultiplier, getBoosts } from "./boosts.js";
+import { updateBoosts, getBoostMultiplier, getBoosts } from "./boosts.js";
 import {
   DAILY_POINTS,
   getTokenPrice,
@@ -46,7 +46,8 @@ ERC20Processor.bind({
     },
     60,
     60
-  );
+  )
+  .onTimeInterval((_, ctx) => updateBoosts(ctx), 60 * 24, 60 * 24);
 
 async function processAccount(
   ctx: ERC20Context,
@@ -60,7 +61,7 @@ async function processAccount(
   const points = snapshot ? await calcPoints(ctx, snapshot) : new BigDecimal(0);
 
   const newSnapshot = await getAccountSnapshot(ctx, account);
-  const boosts = await getBoosts(ctx, account);
+  const boosts = await getBoosts(account);
 
   ctx.eventLogger.emit("point_update", {
     poolAddress: ctx.address,

@@ -13,6 +13,7 @@ export async function updateBoost(
       id: account,
       dinero: false,
       blueprint: false,
+      hyperliquid: false,
     });
   if (snapshot[field] != value) {
     snapshot[field] = value;
@@ -20,6 +21,7 @@ export async function updateBoost(
       account,
       dinero: snapshot.dinero,
       blueprint: snapshot.blueprint,
+      hyperliquid: snapshot.hyperliquid,
     });
     return snapshot;
   }

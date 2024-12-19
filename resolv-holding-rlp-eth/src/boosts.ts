@@ -1,124 +1,93 @@
 import { EthContext } from "@sentio/sdk/eth";
-import { Mutex } from "async-mutex";
 
 interface Boost {
   account: string;
-  timestampMilli: number;
   dinero: boolean;
   blueprint: boolean;
+  hyperliquid: boolean;
 }
 
-const updateIntervalMilli = 10 * 60 * 1000; // 10 minutes
+const S1Milli = 1733961600000; // 2024-12-12 00:00:00
 
-const mutex = new Mutex();
 let lastUpdateTimestampMilli = 0;
-let accountBoosts: { [account: string]: Boost[] } = {};
-
-fetchBoosts();
+let accountBoosts: { [account: string]: Boost } = {};
 
 export async function getBoostMultiplier(ctx: EthContext, account: string) {
-  const boosts = await getBoosts(ctx, account);
+  const ts = ctx.timestamp.getTime();
+  const boosts = await getBoosts(account);
   let ret = 1;
   if (boosts.dinero) {
-    ret *= 2;
+    ret += (ts < S1Milli) ? 0.5 : 0.1;
   }
   if (boosts.blueprint) {
-    ret *= 2;
+    ret += (ts < S1Milli) ? 0.25 : 0.25;
+  }
+  if (boosts.hyperliquid) {
+    ret += (ts < S1Milli) ? 0.5 : 0.1;
   }
   return ret;
 }
 
-export async function getBoosts(ctx: EthContext, account: string) {
-  return getBoostsByTime(ctx.timestamp.getTime(), account);
-}
-
-export async function getBoostsByTime(timestampMilli: number, account: string) {
+export async function getBoosts(account: string) {
   account = account.toLowerCase();
   const defaultBoost = <Boost>{
     account,
-    timestampMilli,
     dinero: false,
     blueprint: false,
+    hyperliquid: false,
   };
-
-  const allBoosts = await mutex.runExclusive(fetchBoosts);
-  const boosts = allBoosts[account];
-  if (!boosts) {
-    return defaultBoost;
-  }
-  let l = 0,
-    r = boosts.length - 1;
-  while (l < r) {
-    const m = Math.ceil((l + r) / 2);
-    if (boosts[m].timestampMilli <= timestampMilli) {
-      l = m;
-    } else {
-      r = m - 1;
-    }
-  }
-  return boosts[l].timestampMilli <= timestampMilli ? boosts[l] : defaultBoost;
+  return accountBoosts[account] ?? defaultBoost;
 }
 
-export async function fetchBoosts() {
-  if (Date.now() - lastUpdateTimestampMilli < updateIntervalMilli) {
-    return accountBoosts;
-  }
+export async function updateBoosts(ctx: EthContext) {
   const limit = 10000;
   let offset = 0;
   let tot = 0;
-  let ret: { [account: string]: Boost[] } = {};
+  let ret: { [account: string]: Boost } = {};
   while (true) {
-    const sql = `
-    select lower(account) as account, toUnixTimestamp(timestamp) * 1000 as timestampMilli, dinero, blueprint 
-    from boosts 
-    order by timestamp asc
-    limit ${limit} 
-    offset ${offset}`;
+    const params = {
+      limit,
+      offset,
+      timestamp: ctx.timestamp.getTime() / 1000,
+    };
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
       throw new Error("api key not set");
     }
     const resp = await fetch(
-      "https://app.sentio.xyz/api/v1/analytics/resolv/resolv-boosts/sql/execute",
+      "https://endpoint.sentio.xyz/resolv/resolv-boosts/user-boosts",
       {
         method: "POST",
         headers: {
           "api-key": apiKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          sqlQuery: {
-            sql,
-            size: 10000,
-          },
-        }),
+        body: JSON.stringify(params),
       }
     ).then((res) => res.json());
-    if (!resp.result) {
+    if (!resp.syncSqlResponse.result) {
       console.error("empty resp", resp);
       throw new Error("empty resp");
     }
-    for (const row of resp.result.rows) {
-      const { account, timestampMilli, dinero, blueprint } = row;
-      if (!ret[account]) {
-        ret[account] = [];
-      }
-      ret[account].push({
+    const rows = resp.syncSqlResponse.result.rows || [];
+    for (const row of rows) {
+      const { account, dinero_boost, blueprint_boost, hyperliquid_boost } = row;
+      ret[account] = {
         account,
-        timestampMilli,
-        dinero: dinero == 1,
-        blueprint: blueprint == 1,
-      });
+        dinero: dinero_boost == 1,
+        blueprint: blueprint_boost == 1,
+        hyperliquid: hyperliquid_boost == 1,
+      };
     }
-    tot += resp.result.rows.length;
+    tot += rows.length;
     offset += limit;
-    console.log("got boosts rows", resp.result.rows.length);
-    if (resp.result.rows.length < limit) {
+    // console.log("got boosts rows", rows.length);
+    if (rows.length < limit) {
       break;
     }
   }
-  console.log("successfully updated boosts, size:", tot);
-  lastUpdateTimestampMilli = Date.now();
+  console.log(`successfully updated boosts, timestamp: ${ctx.timestamp.getTime()}, size: ${tot}`);
+  lastUpdateTimestampMilli = ctx.timestamp.getTime();
   accountBoosts = ret;
   return ret;
 }
