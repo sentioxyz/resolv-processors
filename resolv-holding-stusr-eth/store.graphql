@@ -1,0 +1,6 @@
+type AccountSnapshot @entity {
+  id: String!
+  timestampMilli: BigInt!
+  balance: BigDecimal!
+  usdValue: BigDecimal!
+}

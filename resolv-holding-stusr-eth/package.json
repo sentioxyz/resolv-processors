@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "name": "resolv-holding-stusr-eth",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "sentio build",
+    "gen": "sentio gen",
+    "test": "sentio test",
+    "upload": "sentio upload",
+    "postinstall": "sentio gen"
+  },
+  "dependencies": {
+    "@sentio/bigdecimal": "9.1.1-patch.3",
+    "@sentio/runtime": "^2.53.2",
+    "@sentio/sdk": "^2.53.2",
+    "async-mutex": "^0.5.0",
+    "tslib": "^2.8.1",
+    "tsup": "npm:@sentio/tsup@^8.3.5-rc.1"
+  },
+  "devDependencies": {
+    "@sentio/cli": "^2.23.3",
+    "typescript": "^5.4.5"
+  }
+}
