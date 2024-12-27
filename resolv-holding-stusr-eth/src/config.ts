@@ -10,6 +10,10 @@ export const STUSR = "0x6c8984bc7dbbedaf4f6b2fd766f16ebb7d10aab4";
 export const TOKEN_DECIMALS = await getERC20Contract(NETWORK, STUSR).decimals();
 
 export function getTokenPrice(ctx: EthContext, token: string) {
+  if (token.toLowerCase() == "0x6c8984bc7dbbedaf4f6b2fd766f16ebb7d10aab4") {
+    // stUSR
+    return 1;
+  }
   if (token.toLowerCase() == "0x66a1e37c9b0eaddca17d3662d6c05f4decf3e110") {
     // USR
     return 1;
