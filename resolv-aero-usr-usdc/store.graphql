@@ -1,0 +1,7 @@
+type AccountSnapshot @entity {
+  id: ID!
+  timestampMilli: BigInt!
+  usrBalance: BigDecimal!
+  usdcBalance: BigDecimal!
+  usdValue: BigDecimal!
+}
