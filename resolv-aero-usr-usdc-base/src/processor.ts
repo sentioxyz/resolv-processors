@@ -11,7 +11,7 @@ import {
 } from "./config.js";
 import { AccountSnapshot } from "./schema/store.js";
 import { PoolContext, PoolProcessor } from "./types/eth/pool.js";
-import { getBoostMultiplier, getBoosts } from "./boosts.js";
+import { getBoostMultiplier, getBoosts, updateBoosts } from "./boosts.js";
 
 GLOBAL_CONFIG.execution = {
   sequential: true,
@@ -38,15 +38,15 @@ PoolProcessor.bind({
     ]);
     await ctx.store.upsert(newSnapshots);
   })
-  .onEventSwap(async (event, ctx) => {
-    const snapshots = await ctx.store.list(AccountSnapshot);
-    const newSnapshots = await Promise.all(
-      snapshots.map((snapshot) =>
-        process(ctx, snapshot.id.toString(), snapshot, event.name)
-      )
-    );
-    await ctx.store.upsert(newSnapshots);
-  })
+  // .onEventSwap(async (event, ctx) => {
+  //   const snapshots = await ctx.store.list(AccountSnapshot);
+  //   const newSnapshots = await Promise.all(
+  //     snapshots.map((snapshot) =>
+  //       process(ctx, snapshot.id.toString(), snapshot, event.name)
+  //     )
+  //   );
+  //   await ctx.store.upsert(newSnapshots);
+  // })
   .onTimeInterval(
     async (_, ctx) => {
       const positionSnapshots = await ctx.store.list(AccountSnapshot);
@@ -59,7 +59,8 @@ PoolProcessor.bind({
     },
     4 * 60,
     24 * 60
-  );
+  )
+  .onTimeInterval((_, ctx) => updateBoosts(ctx), 60 * 24, 60 * 24);
 
 async function process(
   ctx: PoolContext,
@@ -72,9 +73,7 @@ async function process(
   const snapshotUsdcBalance = snapshot?.usdcBalance ?? new BigDecimal(0);
   const snapshotUsdValue = snapshot?.usdValue ?? new BigDecimal(0);
 
-  const points = snapshot
-    ? await calcPoints(ctx, snapshot)
-    : new BigDecimal(0);
+  const points = snapshot ? await calcPoints(ctx, snapshot) : new BigDecimal(0);
   const [lpBalance, totalSupply, reserves] = await Promise.all([
     ctx.contract.balanceOf(account),
     ctx.contract.totalSupply(),
