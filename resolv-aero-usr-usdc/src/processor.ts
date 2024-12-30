@@ -55,7 +55,7 @@ PoolProcessor.bind({
           process(ctx, snapshot.id.toString(), snapshot, "TimeInterval")
         )
       );
-      await ctx.store.upsert(newSnapshots.filter((s) => s != undefined));
+      await ctx.store.upsert(newSnapshots);
     },
     4 * 60,
     24 * 60
@@ -74,7 +74,7 @@ async function process(
 
   const points = snapshot
     ? await calcPoints(ctx, snapshot)
-    : [new BigDecimal(0), new BigDecimal(0), new BigDecimal(0)];
+    : new BigDecimal(0);
   const [lpBalance, totalSupply, reserves] = await Promise.all([
     ctx.contract.balanceOf(account),
     ctx.contract.totalSupply(),
