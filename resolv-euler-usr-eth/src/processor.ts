@@ -19,7 +19,6 @@ GLOBAL_CONFIG.execution = {
 EVaultProcessor.bind({
   address: VAULT,
   network: NETWROK,
-  startBlock: 21087960,
 })
   .onEventDeposit(async (event, ctx) => {
     const newSnapshot = await processAccount(
