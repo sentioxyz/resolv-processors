@@ -3,3 +3,8 @@ type AccountSnapshot @entity {
   timestampMilli: BigInt!
   supplyBalance: BigDecimal!
 }
+
+type Subaccount @entity {
+  id: ID!
+  mainAccount: String!
+}

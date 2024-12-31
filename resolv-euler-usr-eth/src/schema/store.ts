@@ -29,15 +29,34 @@ export class AccountSnapshot extends AbstractEntity  {
   constructor(data: Partial<AccountSnapshot>) {super()}
 }
 
+@Entity("Subaccount")
+export class Subaccount extends AbstractEntity  {
+
+	@Required
+	@Column("ID")
+	id: ID
+
+	@Required
+	@Column("String")
+	mainAccount: String
+  constructor(data: Partial<Subaccount>) {super()}
+}
+
 
 const source = `type AccountSnapshot @entity {
   id: ID!
   timestampMilli: BigInt!
   supplyBalance: BigDecimal!
+}
+
+type Subaccount @entity {
+  id: ID!
+  mainAccount: String!
 }`
 DatabaseSchema.register({
   source,
   entities: {
-    "AccountSnapshot": AccountSnapshot
+    "AccountSnapshot": AccountSnapshot,
+		"Subaccount": Subaccount
   }
 })

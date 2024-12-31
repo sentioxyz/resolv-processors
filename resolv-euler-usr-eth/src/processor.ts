@@ -1,20 +1,58 @@
 import { GLOBAL_CONFIG } from "@sentio/runtime";
 import { EthContext, isNullAddress } from "@sentio/sdk/eth";
 import { EVaultContext, EVaultProcessor } from "./types/eth/evault.js";
-import { AccountSnapshot } from "./schema/store.js";
+import { AccountSnapshot, Subaccount } from "./schema/store.js";
 import {
   DAILY_POINTS,
   MILLISECOND_PER_DAY,
   NETWROK,
   TOKEN_DECIMALS,
   VAULT,
+  VAULT_CONNECTOR,
 } from "./config.js";
 import { BigDecimal } from "@sentio/sdk";
 import { getBoostMultiplier, getBoosts, updateBoosts } from "./boosts.js";
+import { EthereumVaultConnectorProcessor } from "./types/eth/ethereumvaultconnector.js";
 
 GLOBAL_CONFIG.execution = {
   sequential: true,
 };
+
+EthereumVaultConnectorProcessor.bind({
+  network: NETWROK,
+  address: VAULT_CONNECTOR,
+  startBlock: 21285308,
+}).onEventCallWithContext(
+  async (event, ctx) => {
+    const prefix = event.args.onBehalfOfAddressPrefix.toLowerCase();
+    const subaccounts = await ctx.store.list(Subaccount);
+    const subaccount = subaccounts.find((s) => s.id === prefix);
+    if (!subaccount) {
+      await ctx.store.upsert(
+        new Subaccount({
+          id: prefix,
+          mainAccount: event.args.caller,
+        })
+      );
+      ctx.eventLogger.emit("subaccount_created", {
+        prefix,
+        mainAccount: event.args.caller,
+      });
+      return;
+    }
+    if (subaccount.mainAccount != event.args.caller && event.args.caller != VAULT) {
+      throw new Error(
+        `Subaccount for prefix ${prefix} already exists, old main acc: ${subaccount.mainAccount}, new main acc: ${event.args.caller}`
+      );
+    }
+  },
+  EthereumVaultConnectorProcessor.filters.CallWithContext(
+    null,
+    null,
+    null,
+    VAULT
+  )
+);
 
 EVaultProcessor.bind({
   address: VAULT,
@@ -91,9 +129,16 @@ async function processAccount(
   const points = snapshot ? await calcPoints(ctx, snapshot) : new BigDecimal(0);
   const newSnapshot = await getLatestSnapshot(ctx, account);
 
-  const boosts = await getBoosts(account);
+  const prefix = account.slice(0, -2).toLowerCase();
+  const mainAccount = (await ctx.store.get(Subaccount, prefix))?.mainAccount ?? account;
+  // if (!mainAccount) {
+  //   throw new Error(`main account not found for ${prefix}`);
+  // }
+
+  const boosts = await getBoosts(mainAccount);
   ctx.eventLogger.emit("point_update", {
-    account,
+    account: mainAccount,
+    subaccount: account,
     points,
     snapshotTimestampMilli: snapshot?.timestampMilli ?? 0n,
     snapshotSupplyBalance: snapshot?.supplyBalance.toString() ?? "0",
